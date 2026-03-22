@@ -15,21 +15,40 @@ function formatDate(date: Date): string {
 
 // Parse BaniDB v2 response — primary source
 // https://api.banidb.com/v2/hukamnamas/today  or  /v2/hukamnamas/YYYY/MM/DD
+//
+// Actual response shape (from BaniDB API source):
+// {
+//   date: { gregorian: { month, date, year } },
+//   shabadIds: [...],
+//   shabads: [                        // one entry per shabad
+//     {
+//       shabadInfo: { pageNo, raag: { unicode, english }, source: { pageNo } },
+//       count: N,
+//       verses: [                     // one entry per verse/line
+//         {
+//           verse: { unicode, gurmukhi },
+//           translation: { en: { bdb, ssk, ms }, pu, hi },
+//           transliteration: { english, en, ipa },   // values are strings
+//           pageNo, lineNo, ...
+//         }
+//       ]
+//     }
+//   ]
+// }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseBaniDB(data: any, dateStr: string): HukamnamaData {
-  const hukam = data?.hukamnama ?? data;
-
   const gurmukhiLines: string[] = [];
   const englishLines: string[] = [];
   const translitLines: string[] = [];
 
-  // BaniDB shape: hukamnama.shabads[].shabad.lines[]
+  // BaniDB hukamnama shape: top-level { shabads: [ { shabadInfo, verses: [...] } ] }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const shabads: any[] = hukam?.shabads ?? [];
+  const shabads: any[] = data?.shabads ?? [];
   for (const s of shabads) {
+    // Each shabad has a `verses` array (not `.shabad.lines`)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const lines: any[] = s?.shabad?.lines ?? [];
-    for (const line of lines) {
+    const verses: any[] = s?.verses ?? [];
+    for (const line of verses) {
       const g: string =
         line?.verse?.unicode ?? line?.verse?.gurmukhi ?? "";
       // Only English translation — no Hindi/Punjabi
@@ -38,9 +57,10 @@ function parseBaniDB(data: any, dateStr: string): HukamnamaData {
         line?.translation?.en?.ssk ??
         line?.translation?.en?.ms ??
         "";
+      // transliteration.english is a plain string (not a nested object)
       const t: string =
-        line?.transliteration?.english?.ssk ??
-        line?.transliteration?.english?.ipa ??
+        line?.transliteration?.english ??
+        line?.transliteration?.en ??
         "";
       if (g) gurmukhiLines.push(g);
       if (e) englishLines.push(e);
@@ -48,15 +68,15 @@ function parseBaniDB(data: any, dateStr: string): HukamnamaData {
     }
   }
 
-  const firstShabad = shabads[0]?.shabad;
+  // ang (page number) lives in shabadInfo, not at top level
+  const firstShabad = shabads[0];
   const ang =
-    hukam?.ang ??
-    firstShabad?.bani?.source?.pageNo ??
+    firstShabad?.shabadInfo?.pageNo ??
+    firstShabad?.verses?.[0]?.pageNo ??
     "";
   const raag =
-    firstShabad?.bani?.raag?.unicode ??
-    firstShabad?.bani?.chapter?.unicode ??
-    hukam?.raag ??
+    firstShabad?.shabadInfo?.raag?.unicode ??
+    firstShabad?.shabadInfo?.raag?.english ??
     "";
 
   return {
