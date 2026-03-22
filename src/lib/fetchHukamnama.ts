@@ -13,8 +13,65 @@ function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
 }
 
-// Parse SikhNet response into our normalised shape
-// SikhNet returns a rich JSON — we extract what we need
+// Parse BaniDB v2 response — primary source
+// https://api.banidb.com/v2/hukamnamas/today  or  /v2/hukamnamas/YYYY/MM/DD
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseBaniDB(data: any, dateStr: string): HukamnamaData {
+  const hukam = data?.hukamnama ?? data;
+
+  const gurmukhiLines: string[] = [];
+  const englishLines: string[] = [];
+  const translitLines: string[] = [];
+
+  // BaniDB shape: hukamnama.shabads[].shabad.lines[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const shabads: any[] = hukam?.shabads ?? [];
+  for (const s of shabads) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lines: any[] = s?.shabad?.lines ?? [];
+    for (const line of lines) {
+      const g: string =
+        line?.verse?.unicode ?? line?.verse?.gurmukhi ?? "";
+      // Only English translation — no Hindi/Punjabi
+      const e: string =
+        line?.translation?.en?.bdb ??
+        line?.translation?.en?.ssk ??
+        line?.translation?.en?.ms ??
+        "";
+      const t: string =
+        line?.transliteration?.english?.ssk ??
+        line?.transliteration?.english?.ipa ??
+        "";
+      if (g) gurmukhiLines.push(g);
+      if (e) englishLines.push(e);
+      if (t) translitLines.push(t);
+    }
+  }
+
+  const firstShabad = shabads[0]?.shabad;
+  const ang =
+    hukam?.ang ??
+    firstShabad?.bani?.source?.pageNo ??
+    "";
+  const raag =
+    firstShabad?.bani?.raag?.unicode ??
+    firstShabad?.bani?.chapter?.unicode ??
+    hukam?.raag ??
+    "";
+
+  return {
+    date: dateStr,
+    ang,
+    raag,
+    source: "BaniDB",
+    gurmukhi: gurmukhiLines,
+    english: englishLines,
+    transliteration: translitLines.length > 0 ? translitLines : undefined,
+    raw: data,
+  };
+}
+
+// Parse SikhNet response — first fallback
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseSikhNet(data: any, dateStr: string): HukamnamaData {
   const hukam = data?.hukamnama ?? data;
@@ -23,7 +80,6 @@ function parseSikhNet(data: any, dateStr: string): HukamnamaData {
   const englishLines: string[] = [];
   const translitLines: string[] = [];
 
-  // SikhNet structures verses under hukamnama.lines or hukamnama.verse
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const lines: any[] =
     hukam?.lines ??
@@ -33,22 +89,23 @@ function parseSikhNet(data: any, dateStr: string): HukamnamaData {
     [];
 
   for (const line of lines) {
-    const gurmukhi =
+    const g: string =
       line?.gurmukhi?.unicode ??
       line?.gurmukhi?.akhar ??
       line?.naad?.gurbani ??
       "";
-    const english =
+    // Only English translation — no Hindi/Punjabi
+    const e: string =
       line?.translation?.english?.ssk ??
       line?.translation?.english?.bdb ??
       line?.translation?.en?.bdb ??
       "";
-    const translit =
+    const t: string =
       line?.romanized ?? line?.transliteration ?? line?.roman ?? "";
 
-    if (gurmukhi) gurmukhiLines.push(gurmukhi);
-    if (english) englishLines.push(english);
-    if (translit) translitLines.push(translit);
+    if (g) gurmukhiLines.push(g);
+    if (e) englishLines.push(e);
+    if (t) translitLines.push(t);
   }
 
   return {
@@ -65,7 +122,6 @@ function parseSikhNet(data: any, dateStr: string): HukamnamaData {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseSikhNetV2(data: any, dateStr: string): HukamnamaData {
-  // Alternative SikhNet shape used by newer endpoints
   const payload = data?.data ?? data;
   const hukam = payload?.hukamnama ?? payload;
 
@@ -75,13 +131,14 @@ function parseSikhNetV2(data: any, dateStr: string): HukamnamaData {
 
   const verses = hukam?.verses ?? hukam?.shabad ?? [];
   for (const verse of verses) {
-    const g = verse?.gurmukhi ?? verse?.verse?.gurmukhi ?? "";
-    const e =
+    const g: string = verse?.gurmukhi ?? verse?.verse?.gurmukhi ?? "";
+    // Only English translation — no Hindi/Punjabi
+    const e: string =
       verse?.translation?.en?.bdb ??
       verse?.englishTranslation ??
       verse?.english ??
       "";
-    const t = verse?.transliteration ?? verse?.roman ?? "";
+    const t: string = verse?.transliteration ?? verse?.roman ?? "";
     if (g) gurmukhiLines.push(g);
     if (e) englishLines.push(e);
     if (t) translitLines.push(t);
@@ -99,13 +156,12 @@ function parseSikhNetV2(data: any, dateStr: string): HukamnamaData {
   };
 }
 
-// Parse the akashdhami / SGPC fallback response
+// Parse SGPC / akashdhami proxy response — last resort fallback
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseSGPC(data: any, dateStr: string): HukamnamaData {
   const gurmukhiLines: string[] = [];
   const englishLines: string[] = [];
 
-  // Possible shapes from the SGPC proxy
   const lines =
     data?.hukamnama?.lines ??
     data?.lines ??
@@ -114,18 +170,18 @@ function parseSGPC(data: any, dateStr: string): HukamnamaData {
     [];
 
   for (const line of lines) {
-    const g =
+    const g: string =
       line?.gurmukhi?.unicode ??
       line?.gurmukhi ??
       line?.gurbani?.unicode ??
       line?.punjabi ??
       "";
-    const e = line?.translation?.english ?? line?.english ?? "";
+    // Only English translation — no Hindi/Punjabi
+    const e: string = line?.translation?.english ?? line?.english ?? "";
     if (g) gurmukhiLines.push(g);
     if (e) englishLines.push(e);
   }
 
-  // Some SGPC responses have a single blob rather than per-line
   if (gurmukhiLines.length === 0) {
     const blob =
       data?.hukamnama?.gurmukhi ??
@@ -137,6 +193,7 @@ function parseSGPC(data: any, dateStr: string): HukamnamaData {
         if (l.trim()) gurmukhiLines.push(l.trim());
       });
     }
+    // Only English translation — no Hindi/Punjabi
     const eblob =
       data?.hukamnama?.translation ?? data?.translation ?? data?.english ?? "";
     if (eblob) {
@@ -162,31 +219,49 @@ export async function fetchHukamnama(
 ): Promise<HukamnamaData> {
   const dateStr = formatDate(date);
 
-  // --- Primary: SikhNet ---
+  // BaniDB uses YYYY/MM/DD path segments; "today" shortcut is also valid
+  const today = formatDate(new Date());
+  const baniDbPath =
+    dateStr === today
+      ? "today"
+      : dateStr.replace(/-/g, "/");
+
+  // --- Primary: BaniDB ---
   try {
     const res = await fetch(
-      `https://www.sikhnet.com/hukam/fetchHukamnama?date=${dateStr}`,
+      `https://api.banidb.com/v2/hukamnamas/${baniDbPath}`,
       { next: { revalidate: 3600 } }
     );
-    if (!res.ok) throw new Error(`SikhNet HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`BaniDB HTTP ${res.status}`);
     const json = await res.json();
-
-    // Try to detect which shape we got
-    const parsed =
-      json?.hukamnama?.verses != null || json?.data?.hukamnama?.verses != null
-        ? parseSikhNetV2(json, dateStr)
-        : parseSikhNet(json, dateStr);
-
+    const parsed = parseBaniDB(json, dateStr);
     if (parsed.gurmukhi.length > 0) return parsed;
-    throw new Error("SikhNet returned empty Gurmukhi");
+    throw new Error("BaniDB returned empty Gurmukhi");
   } catch {
-    // --- Fallback: SGPC via akashdhami proxy ---
-    const res = await fetch(
-      `https://app.akashdhami.com/hukamnama/?date=${dateStr}`,
-      { next: { revalidate: 3600 } }
-    );
-    if (!res.ok) throw new Error(`SGPC HTTP ${res.status}`);
-    const json = await res.json();
-    return parseSGPC(json, dateStr);
+    // --- First fallback: SikhNet ---
+    try {
+      const res = await fetch(
+        `https://www.sikhnet.com/hukam/fetchHukamnama?date=${dateStr}`,
+        { next: { revalidate: 3600 } }
+      );
+      if (!res.ok) throw new Error(`SikhNet HTTP ${res.status}`);
+      const json = await res.json();
+      const parsed =
+        json?.hukamnama?.verses != null ||
+        json?.data?.hukamnama?.verses != null
+          ? parseSikhNetV2(json, dateStr)
+          : parseSikhNet(json, dateStr);
+      if (parsed.gurmukhi.length > 0) return parsed;
+      throw new Error("SikhNet returned empty Gurmukhi");
+    } catch {
+      // --- Last resort: SGPC via akashdhami proxy ---
+      const res = await fetch(
+        `https://app.akashdhami.com/hukamnama/?date=${dateStr}`,
+        { next: { revalidate: 3600 } }
+      );
+      if (!res.ok) throw new Error(`SGPC HTTP ${res.status}`);
+      const json = await res.json();
+      return parseSGPC(json, dateStr);
+    }
   }
 }

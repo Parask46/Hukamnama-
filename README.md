@@ -2,8 +2,6 @@
 
 A beautiful, devotional web application that displays the **daily Hukamnama** — the sacred daily divine order from Sri Darbar Sahib (the Golden Temple), Amritsar.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FParask46%2FHukamnama-)
-
 ---
 
 ## What is the Hukamnama?
@@ -54,18 +52,34 @@ npm start
 
 Open [http://localhost:3000](http://localhost:3000) to view the app.
 
+### Running from Visual Studio Code
+
+1. Open the project folder in VS Code
+2. Press **F5** (or go to **Run → Start Debugging**)
+3. Choose **"Next.js: debug full stack"** — this starts the dev server and opens Chrome automatically
+4. Alternatively, open a terminal in VS Code and run `npm run dev`
+
+A `.vscode/launch.json` is included with three debug configurations:
+- **Next.js: debug server-side** — attaches Node debugger to the Next.js server
+- **Next.js: debug client-side** — opens Chrome debugger on `http://localhost:3000`
+- **Next.js: debug full stack** — starts the server and auto-opens Chrome for full-stack debugging
+
 ---
 
 ## API Sources
 
-The app fetches Hukamnama data from two sources with automatic fallback:
+The app fetches Hukamnama data from three sources with automatic fallback:
 
-1. **Primary — SikhNet**
-   - `GET https://www.sikhnet.com/hukam/fetchHukamnama?date=YYYY-MM-DD`
-   - Returns Gurmukhi (Unicode), English translation, and metadata
+1. **Primary — BaniDB**
+   - `GET https://api.banidb.com/v2/hukamnamas/today` (today)
+   - `GET https://api.banidb.com/v2/hukamnamas/YYYY/MM/DD` (any date)
+   - Returns Gurmukhi (Unicode) and English translation
    - Free, no API key required
 
-2. **Fallback — SGPC (via akashdhami proxy)**
+2. **First fallback — SikhNet**
+   - `GET https://www.sikhnet.com/hukam/fetchHukamnama?date=YYYY-MM-DD`
+
+3. **Last resort — SGPC (via akashdhami proxy)**
    - `GET https://app.akashdhami.com/hukamnama/?date=YYYY-MM-DD`
    - Pulls directly from the Shiromani Gurdwara Parbandhak Committee
 
@@ -96,21 +110,11 @@ src/
 
 ---
 
-## Deploying to Vercel
-
-The easiest way to deploy is via the button above, or:
-
-1. Push this repository to GitHub
-2. Go to [vercel.com/new](https://vercel.com/new)
-3. Import your repository
-4. Click **Deploy** — no environment variables needed
-
----
-
 ## Attribution
 
 - **SGPC** (Shiromani Gurdwara Parbandhak Committee) — official source of daily Hukamnama
-- **SikhNet** — API provider ([sikhnet.com](https://www.sikhnet.com))
+- **BaniDB** — primary API provider ([api.banidb.com](https://api.banidb.com))
+- **SikhNet** — fallback API provider ([sikhnet.com](https://www.sikhnet.com))
 - Gurbani text is displayed exactly as returned by the API — unaltered, unparaphrased
 
 ---
