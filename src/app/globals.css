@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Google Fonts ─────────────────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+Gurmukhi:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Cinzel:wght@400;500;600&display=swap");
+
+/* ─── Design Tokens ─────────────────────────────────────────────── */
+:root {
+  --gold:       #C9933A;
+  --deep-blue:  #0D1B2A;
+  --cream:      #F5EDD6;
+  --white:      #FDFAF3;
+  --accent:     #E8B55A;
+  --text-muted: #8A7A5A;
+  --card-bg:    rgba(13, 27, 42, 0.85);
+  --border-gold: rgba(201, 147, 58, 0.45);
+}
+
+/* ─── Base ─────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--deep-blue);
+  color: var(--cream);
+  font-family: "EB Garamond", Georgia, serif;
+  -webkit-font-smoothing: antialiased;
+  /* Subtle noise texture via SVG data URI */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* ─── Typography helpers ─────────────────────────────────────────── */
+.font-gurmukhi {
+  font-family: "Noto Serif Gurmukhi", serif;
+  line-height: 2;
+}
+
+.font-english {
+  font-family: "EB Garamond", Georgia, serif;
+  line-height: 1.75;
+}
+
+.font-ui {
+  font-family: "Cinzel", "Times New Roman", serif;
+}
+
+/* ─── Gold glow animation ─────────────────────────────────────────── */
+@keyframes goldGlow {
+  0%, 100% { text-shadow: 0 0 8px rgba(201, 147, 58, 0.4), 0 0 20px rgba(232, 181, 90, 0.2); }
+  50%       { text-shadow: 0 0 16px rgba(201, 147, 58, 0.7), 0 0 40px rgba(232, 181, 90, 0.35); }
+}
+
+@keyframes borderGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(201, 147, 58, 0.25), inset 0 0 12px rgba(201, 147, 58, 0.05); }
+  50%       { box-shadow: 0 0 28px rgba(201, 147, 58, 0.45), inset 0 0 20px rgba(201, 147, 58, 0.1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* ─── Glow utilities ─────────────────────────────────────────────── */
+.gold-glow {
+  animation: goldGlow 3s ease-in-out infinite;
+}
+
+.card-glow {
+  animation: borderGlow 4s ease-in-out infinite;
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* ─── Shimmer skeleton ───────────────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(201, 147, 58, 0.07) 25%,
+    rgba(232, 181, 90, 0.18) 50%,
+    rgba(201, 147, 58, 0.07) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+
+/* ─── Reduced-motion override ────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gold-glow,
+  .card-glow,
+  .fade-in,
+  .shimmer {
+    animation: none;
+  }
+}
+
+/* ─── Scrollbar (Webkit) ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--deep-blue);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gold);
+  border-radius: 3px;
+}
+
+/* ─── Date input styling ─────────────────────────────────────────── */
+input[type="date"] {
+  color-scheme: dark;
+}
+
+/* ─── Focus ring ─────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
