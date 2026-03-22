@@ -1,4 +1,4 @@
-# 🕉️ Hukamnama — Daily Divine Order
+#  Hukamnama — Daily Divine Order
 
 A beautiful, devotional web application that displays the **daily Hukamnama** — the sacred daily divine order from Sri Darbar Sahib (the Golden Temple), Amritsar.
 
