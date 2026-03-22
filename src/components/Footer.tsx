@@ -30,6 +30,15 @@ export default function Footer() {
       >
         Source:{" "}
         <a
+          href="https://api.banidb.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "var(--gold)", textDecoration: "underline" }}
+        >
+          BaniDB
+        </a>{" "}
+        &amp;{" "}
+        <a
           href="https://www.sikhnet.com/hukam"
           target="_blank"
           rel="noopener noreferrer"
